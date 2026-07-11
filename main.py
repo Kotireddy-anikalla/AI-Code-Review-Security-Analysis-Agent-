@@ -3,10 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import ast
 import subprocess
 import uuid
-from langchain_community.llms import HuggingFaceEndpoint
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain.llms import HuggingFaceHub
 from langchain.chains import RetrievalQA
+from langchain.vectorstores import Chroma
+from langchain.embeddings import HuggingFaceEmbeddings
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -16,10 +16,10 @@ submissions = {}
 embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 
-llm = HuggingFaceEndpoint(
-    repo_id="google/flan-t5-base",
+llm = HuggingFaceHub(
+    repo_id="google/flan-t5-large",
     task="text2text-generation",
-    model_kwargs={"temperature": 0, "max_length": 256}
+    model_kwargs={"temperature": 0, "max_length": 512}
 )
 
 qa_chain = RetrievalQA.from_chain_type(
