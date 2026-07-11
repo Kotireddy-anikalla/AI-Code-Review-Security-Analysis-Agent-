@@ -52,19 +52,3 @@ async def submit_code(code: str = Form(None), file: UploadFile = File(None), lan
         "errors": errors,
         "lines": len(code.splitlines())
     }
-
-@app.post("/api/chat")
-async def chat(question: str, submission_id: str = None):
-    context = ""
-    if submission_id and submission_id in submissions:
-        code = submissions[submission_id]["code"]
-        context = f"\nCode context (truncated):\n{code[:500]}..."
-    full_question = f"{context}\n\nQuestion: {question}" if context else question
-    result = qa_chain({"query": full_question})
-    return {
-        "answer": result["result"],
-        "sources": [
-            {"content": doc.page_content[:200] + "...", "metadata": doc.metadata}
-            for doc in result["source_documents"]
-        ]
-    }
