@@ -11,6 +11,3 @@ export HUGGINGFACEHUB_API_TOKEN="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"
 pip install -r requirements.txt
 python build_kb.py
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-##note
-if the browser site prints error, type "/docs" at the end of url for execution..
-I'll try to cover this bug..
