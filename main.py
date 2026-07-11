@@ -18,6 +18,7 @@ vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddi
 
 llm = HuggingFaceHub(
     repo_id="google/flan-t5-large",
+    task="text2text-generation",
     model_kwargs={"temperature": 0, "max_length": 512}
 )
 
