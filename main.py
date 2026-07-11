@@ -17,7 +17,7 @@ embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
 
 llm = HuggingFaceHub(
-    repo_id="google/flan-t5-large",
+    repo_id="google/flan-t5-BASE",
     task="text2text-generation",
     model_kwargs={"temperature": 0, "max_length": 512}
 )
