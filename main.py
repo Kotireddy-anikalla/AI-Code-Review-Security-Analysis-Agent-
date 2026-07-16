@@ -6,10 +6,10 @@ import uuid
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_community.llms import HuggingFaceHub          
-from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import Chroma         
+from langchain_community.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.llms import HuggingFacePipeline
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
 app = FastAPI()
 
@@ -24,7 +24,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Check that the vector store exists (you must run build_kb.py first)
 if not os.path.exists("./chroma_db"):
     raise RuntimeError("Chroma DB not found. Please run build_kb.py first.")
 
@@ -34,19 +33,27 @@ vectorstore = Chroma(
     embedding_function=embeddings,
     collection_name="secure_coding"
 )
+retriever = vectorstore.as_retriever(k=3)
 
-# Hugging Face Hub LLM (requires HUGGINGFACEHUB_API_TOKEN env variable)
-llm = HuggingFaceHub(
-    repo_id="google/flan-t5-large",
-    task="text2text-generation",
-    model_kwargs={"temperature": 0, "max_length": 512}
+# Use a smaller model to save time (replace with "google/flan-t5-large" if needed)
+MODEL_NAME = "google/flan-t5-small"   # ~80 MB, fast to download
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+pipe = pipeline(
+    "text2text-generation",
+    model=model,
+    tokenizer=tokenizer,
+    max_new_tokens=256,
+    temperature=0
 )
+llm = HuggingFacePipeline(pipeline=pipe)
 
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    retriever=vectorstore.as_retriever(k=3),
-    return_source_documents=True
-)
+def answer_question(question: str):
+    """Retrieve docs and generate answer using the LLM."""
+    docs = retriever.get_relevant_documents(question)
+    context = "\n\n".join([doc.page_content for doc in docs])
+    prompt = f"Context: {context}\nQuestion: {question}\nAnswer:"
+    return llm(prompt), docs
 
 submissions = {}
 
@@ -58,7 +65,6 @@ def validate_python(code):
         return [f"Line {e.lineno}: {e.msg}"]
 
 def validate_java(code):
-    # Use a temporary file with a unique name
     with tempfile.NamedTemporaryFile(suffix=".java", delete=False) as f:
         f.write(code.encode('utf-8'))
         java_file = f.name
@@ -73,7 +79,6 @@ def validate_java(code):
             return [result.stderr.strip()]
         return []
     finally:
-        # Clean up temporary files
         if os.path.exists(java_file):
             os.unlink(java_file)
         class_file = java_file.replace(".java", ".class")
@@ -90,20 +95,12 @@ async def submit_code(
         code = (await file.read()).decode('utf-8')
     if not code:
         raise HTTPException(status_code=400, detail="No code provided")
-
     lang = language.lower()
     if lang not in ["python", "java"]:
         raise HTTPException(status_code=400, detail="Unsupported language")
-
     errors = validate_python(code) if lang == "python" else validate_java(code)
-
     submission_id = str(uuid.uuid4())[:8]
-    submissions[submission_id] = {
-        "code": code,
-        "language": lang,
-        "errors": errors
-    }
-
+    submissions[submission_id] = {"code": code, "language": lang, "errors": errors}
     return {
         "submission_id": submission_id,
         "status": "error" if errors else "success",
@@ -113,10 +110,10 @@ async def submit_code(
 
 @app.post("/api/chat")
 async def chat(question: str = Form(...)):
-    result = qa_chain.invoke({"query": question})   
+    answer, docs = answer_question(question)
     return {
-        "answer": result["result"],
-        "source_documents": [doc.page_content for doc in result["source_documents"]]
+        "answer": answer,
+        "source_documents": [doc.page_content for doc in docs]
     }
 
 @app.get("/api/health")
