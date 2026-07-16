@@ -6,9 +6,9 @@ import uuid
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_community.llms import HuggingFaceHub          # corrected import
+from langchain_community.llms import HuggingFaceHub          
 from langchain.chains import RetrievalQA
-from langchain_community.vectorstores import Chroma          # corrected import
+from langchain_community.vectorstores import Chroma         
 from langchain.embeddings import HuggingFaceEmbeddings
 
 app = FastAPI()
@@ -113,7 +113,7 @@ async def submit_code(
 
 @app.post("/api/chat")
 async def chat(question: str = Form(...)):
-    result = qa_chain.invoke({"query": question})   # .invoke() is recommended
+    result = qa_chain.invoke({"query": question})   
     return {
         "answer": result["result"],
         "source_documents": [doc.page_content for doc in result["source_documents"]]
