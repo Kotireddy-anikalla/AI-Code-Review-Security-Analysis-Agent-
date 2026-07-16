@@ -11,6 +11,15 @@ Conversational Code Assistant allows developers to ask follow-up questions about
 request deeper explanations, or query best practice guidelines — all grounded in an indexed secure
 coding knowledge base. Results are presented in a clean developer portal with severity-scored
 findings, remediation guidance, and exportable review reports.
+## milestone -1
+1. Study OWASP vulnerability standards, secure coding guidelines, code smell patterns, and
+RAG architecture.
+2. Design system architecture, agent responsibilities, orchestration flow, and data models.
+3. Develop Code Submission Module — support direct code paste and file upload for Python
+and Java with syntax validation.
+4. Build Secure Coding Knowledge Base — index OWASP guidelines, secure coding standards,
+and best practice documents into RAG pipeline via chunking, embedding, and vector store
+indexing.
 
 ## Prerequisites
 - Python
