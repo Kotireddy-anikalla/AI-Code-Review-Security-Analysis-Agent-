@@ -20,7 +20,7 @@ and Java with syntax validation.
 4. Build Secure Coding Knowledge Base — index OWASP guidelines, secure coding standards,
 and best practice documents into RAG pipeline via chunking, embedding, and vector store
 indexing.
-#### FILES
+### FILES created for milestone1
 main.py :- This is the main application that serves two REST endpoints:
 /api/submit – accepts code (pasted or uploaded), validates syntax for Python/Java, and returns success/error status.
 /api/chat – accepts a natural‑language question about secure coding, retrieves relevant knowledge chunks, and generates an answer using a local Hugging Face LLM.
