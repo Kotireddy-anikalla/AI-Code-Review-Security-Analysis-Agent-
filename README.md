@@ -20,6 +20,16 @@ and Java with syntax validation.
 4. Build Secure Coding Knowledge Base — index OWASP guidelines, secure coding standards,
 and best practice documents into RAG pipeline via chunking, embedding, and vector store
 indexing.
+#### FILES
+main.py :- This is the main application that serves two REST endpoints:
+/api/submit – accepts code (pasted or uploaded), validates syntax for Python/Java, and returns success/error status.
+/api/chat – accepts a natural‑language question about secure coding, retrieves relevant knowledge chunks, and generates an answer using a local Hugging Face LLM.
+
+build_kb.py :- This script creates and persists a vector store (Chroma) from the secure‑coding knowledge text (knowledge.txt). It is run once before starting the main server.
+
+requirements.txt :- Contains all the requirements to run the code.
+
+knowledge.txt :- contains the data about secure coding practices and owasp top 10 policies, etc.
 
 ## Prerequisites
 - Python
