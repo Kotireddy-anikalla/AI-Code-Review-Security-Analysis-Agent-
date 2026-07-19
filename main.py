@@ -11,6 +11,8 @@ from langchain.embeddings import HuggingFaceEmbeddings
 from langchain_community.llms import HuggingFacePipeline
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
+from agents import orchestrate_agents   # NEW
+
 app = FastAPI()
 
 @app.get("/", include_in_schema=False)
@@ -35,8 +37,7 @@ vectorstore = Chroma(
 )
 retriever = vectorstore.as_retriever(k=3)
 
-# Use a smaller model to save time (replace with "google/flan-t5-large" if needed)
-MODEL_NAME = "google/flan-t5-small"   # ~80 MB, fast to download
+MODEL_NAME = "google/flan-t5-small"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
 pipe = pipeline(
@@ -49,7 +50,6 @@ pipe = pipeline(
 llm = HuggingFacePipeline(pipeline=pipe)
 
 def answer_question(question: str):
-    """Retrieve docs and generate answer using the LLM."""
     docs = retriever.get_relevant_documents(question)
     context = "\n\n".join([doc.page_content for doc in docs])
     prompt = f"Context: {context}\nQuestion: {question}\nAnswer:"
@@ -107,6 +107,29 @@ async def submit_code(
         "errors": errors,
         "lines": len(code.splitlines())
     }
+
+@app.post("/api/analyze")
+async def analyze_code(
+    submission_id: str = Form(None),
+    code: str = Form(None),
+    language: str = Form(None)
+):
+    # If submission_id provided, use that code
+    if submission_id:
+        if submission_id not in submissions:
+            raise HTTPException(status_code=404, detail="Submission not found")
+        code = submissions[submission_id]["code"]
+        language = submissions[submission_id]["language"]
+    else:
+        if not code or not language:
+            raise HTTPException(status_code=400, detail="Provide either submission_id or code+language")
+        lang = language.lower()
+        if lang not in ["python", "java"]:
+            raise HTTPException(status_code=400, detail="Unsupported language")
+
+    # Run agents
+    result = orchestrate_agents(code, language)
+    return result
 
 @app.post("/api/chat")
 async def chat(question: str = Form(...)):
