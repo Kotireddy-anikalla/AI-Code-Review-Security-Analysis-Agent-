@@ -66,8 +66,8 @@ Code Analysis Agent: Detects code smells, cyclomatic complexity issues, and desi
 Security Vulnerability Agent: Scans source code for OWASP Top 10 vulnerabilities (SQL Injection, XSS, Hardcoded Secrets, IDOR).  
 Parallel Orchestrator: Coordinates multi-agent processing using parallel thread pools, aggregating results into unified severity-scored reports.  
 Evaluation & Testing: Validated agent detection accuracy using sample Python and Java scripts with injected code smells and security flaws
-Prerequisites & Installation
-##Prerequisites
+Prerequisites & Installation.
+## Prerequisites
 Python: 3.10+
 
 Java Development Kit (JDK): javac installed and configured in system path
