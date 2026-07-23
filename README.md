@@ -1,8 +1,8 @@
-#AI Code Review & Security Analysis Agent
+# AI Code Review & Security Analysis Agent
 An intelligent, multi-agent platform designed to automate code reviews, identify code smells, detect OWASP-standard security vulnerabilities, and provide context-aware remediation guidance using RAG (Retrieval-Augmented Generation).
 ## Project Overview
  Manual code reviews are often slow, subjective, and difficult to scale, leaving critical security vulnerabilities and code quality issues undetected until late in the development lifecycle.  This project delivers an automated pipeline for Python and Java source code. When a developer submits code via direct paste or file upload , a multi-agent system orchestrates static analysis, vulnerability scanning, remediation generation, and PR summary compilation. Additionally, a RAG-powered Conversational Assistant enables developers to ask follow-up questions grounded in secure coding standards. 
-##System Architecture & Pipeline Flow
+## System Architecture & Pipeline Flow
 The platform relies on a modular, multi-agent pipeline:
 [ Developer Submission ] 
        │
@@ -46,19 +46,19 @@ Interactive RAG Q&A: Developers can ask questions regarding the findings. The Co
 
 ## Milestone 1: Core Architecture & Knowledge Base 
 SetupMilestone 1 focuses on building the foundation: system design, source code ingestion, syntax validation, and vector database indexing.  
-#Key Accomplishments:
+### Key Accomplishments:
 Knowledge Base Ingestion: Documented OWASP guidelines and secure coding standards into knowledge.txt.  
 RAG Pipeline Construction: Built build_kb.py to chunk, embed (via Hugging Face transformers), and index knowledge documents into a local ChromaDB vector store.
 Syntax Validation Module: Implemented file and paste ingestion with AST validation for Python and Java source code.  
 REST Service Endpoints: Built initial server endpoints (/api/submit and /api/chat) inside 
-##Files Implemented (Milestone 1):
+## Files Implemented (Milestone 1):
 build_kb.py: Script to process knowledge.txt, generate vector embeddings, and build the persistent ChromaDB store.
 knowledge.txt: Knowledge base containing OWASP Top 10 policies, secure design patterns, and anti-pattern rules.  
 main.py: Core FastAPI service serving the submission and basic RAG chat endpoints.
 requirements.txt: Python package dependency registry.
-##Milestone 2: Multi-Agent Analysis & Orchestration Pipeline
+## Milestone 2: Multi-Agent Analysis & Orchestration Pipeline
 Milestone 2 focuses on agent development, parallel execution, vulnerability classification, and output aggregation
-##Key Accomplishments:
+### Key Accomplishments:
 Code Analysis Agent: Detects code smells, cyclomatic complexity issues, and design anti-patterns.  
 Security Vulnerability Agent: Scans source code for OWASP Top 10 vulnerabilities (SQL Injection, XSS, Hardcoded Secrets, IDOR).  
 Parallel Orchestrator: Coordinates multi-agent processing using parallel thread pools, aggregating results into unified severity-scored reports.  
