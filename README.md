@@ -86,3 +86,10 @@ Python: 3.10+
 Java Development Kit (JDK): javac installed and configured in system path
 
 Hugging Face Account & API Token: Required for free embedding and model access
+## Setup
+```bash
+-python3 -m venv venv
+-source venv/bin/activate
+-pip install -r requirements.txt
+-streamlit run app.py
+```
