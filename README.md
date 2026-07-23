@@ -1,43 +1,72 @@
-# AI-Code-Review-Security-Analysis-Agent-
- The objective of this project is to develop an AI Code Review &amp; Security Analysis Agent — an
-intelligent multi-agent platform that automatically analyzes source code for quality issues, security
-vulnerabilities, and best practice violations. A developer pastes code directly or uploads a source file
-in Python or Java; a multi-agent pipeline triggers automatically — a Code Analysis Agent reviews
-code structure, detects code smells and design issues, a Security Vulnerability Agent scans for
-OWASP-standard vulnerabilities including SQL injection, XSS, hardcoded secrets, and broken access
-controls, a Remediation Agent generates specific fix recommendations with corrected code
-examples, and a PR Summary Agent produces a human-readable review summary. A RAG-powered
-Conversational Code Assistant allows developers to ask follow-up questions about flagged issues,
-request deeper explanations, or query best practice guidelines — all grounded in an indexed secure
-coding knowledge base. Results are presented in a clean developer portal with severity-scored
-findings, remediation guidance, and exportable review reports.
-## milestone -1
-1. Study OWASP vulnerability standards, secure coding guidelines, code smell patterns, and
-RAG architecture.
-2. Design system architecture, agent responsibilities, orchestration flow, and data models.
-3. Develop Code Submission Module — support direct code paste and file upload for Python
-and Java with syntax validation.
-4. Build Secure Coding Knowledge Base — index OWASP guidelines, secure coding standards,
-and best practice documents into RAG pipeline via chunking, embedding, and vector store
-indexing.
-### FILES created for milestone1
-main.py :- This is the main application that serves two REST endpoints:
-/api/submit – accepts code (pasted or uploaded), validates syntax for Python/Java, and returns success/error status.
-/api/chat – accepts a natural‑language question about secure coding, retrieves relevant knowledge chunks, and generates an answer using a local Hugging Face LLM.
+###🛡️ AI Code Review & Security Analysis Agent
+An intelligent, multi-agent platform designed to automate code reviews, identify code smells, detect OWASP-standard security vulnerabilities, and provide context-aware remediation guidance using RAG (Retrieval-Augmented Generation).
+## Project Overview
+ Manual code reviews are often slow, subjective, and difficult to scale, leaving critical security vulnerabilities and code quality issues undetected until late in the development lifecycle.  This project delivers an automated pipeline for Python and Java source code. When a developer submits code via direct paste or file upload , a multi-agent system orchestrates static analysis, vulnerability scanning, remediation generation, and PR summary compilation. Additionally, a RAG-powered Conversational Assistant enables developers to ask follow-up questions grounded in secure coding standards. 
+##System Architecture & Pipeline Flow
+The platform relies on a modular, multi-agent pipeline:
+[ Developer Submission ] 
+       │
+       ▼
+┌──────────────────────────────────────────────────────────┐
+│ Code Submission Module (Syntax Validation AST / javac)   │
+└───────────────────────────┬──────────────────────────────┘
+                            │ (Valid Code)
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│        Multi-Agent Orchestrator (Parallel Execution)     │
+├────────────────────────────┬─────────────────────────────┤
+│   Code Analysis Agent      │ Security Vulnerability Agent│
+│  (Code Smells & Patterns)  │    (OWASP Vulnerabilities)  │
+└──────────────┬─────────────┴──────────────┬──────────────┘
+               │                            │
+               └─────────────┬──────────────┘
+                             ▼
+┌──────────────────────────────────────────────────────────┐
+│                     Remediation Agent                    │
+│        (Generates Corrected Code & Solutions)            │
+└───────────────────────────┬──────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│                    PR Summary Agent                      │
+│       (Compiles Structured Review & Severity Score)      │
+└───────────────────────────┬──────────────────────────────┘
+                            │
+                            ▼
+┌──────────────────────────────────────────────────────────┐
+│        RAG Conversational Assistant (Q&A Interface)      │
+│         (Grounded in ChromaDB Knowledge Base)            │
+└──────────────────────────────────────────────────────────┘
 
-build_kb.py :- This script creates and persists a vector store (Chroma) from the secure‑coding knowledge text (knowledge.txt). It is run once before starting the main server.
+## Pipelining Process
+Submission & Validation: The submission module validates syntax using language-specific tools (ast for Python, javalang/javac for Java). Invalid code is rejected immediately with error locations.  
+Parallel Agent Analysis: Validated code is processed concurrently by the Code Analysis Agent (design smells, complexity) and the Security Vulnerability Agent (OWASP vulnerabilities like SQLi, XSS, hardcoded secrets). 
+Synthesis & Remediation: Findings are unified and sent to the Remediation Agent to produce corrected code snippets. The PR Summary Agent consolidates everything into a structured review.  
+Interactive RAG Q&A: Developers can ask questions regarding the findings. The Conversational Assistant queries the indexed vector database (ChromaDB) to retrieve relevant secure coding guidelines before generating answers. 
 
-requirements.txt :- Contains all the requirements to run the code.
+## Milestone 1: Core Architecture & Knowledge Base 
+SetupMilestone 1 focuses on building the foundation: system design, source code ingestion, syntax validation, and vector database indexing.  
+#Key Accomplishments:
+Knowledge Base Ingestion: Documented OWASP guidelines and secure coding standards into knowledge.txt.  
+RAG Pipeline Construction: Built build_kb.py to chunk, embed (via Hugging Face transformers), and index knowledge documents into a local ChromaDB vector store.
+Syntax Validation Module: Implemented file and paste ingestion with AST validation for Python and Java source code.  
+REST Service Endpoints: Built initial server endpoints (/api/submit and /api/chat) inside 
+##Files Implemented (Milestone 1):
+build_kb.py: Script to process knowledge.txt, generate vector embeddings, and build the persistent ChromaDB store.
+knowledge.txt: Knowledge base containing OWASP Top 10 policies, secure design patterns, and anti-pattern rules.  
+main.py: Core FastAPI service serving the submission and basic RAG chat endpoints.
+requirements.txt: Python package dependency registry.
+##Milestone 2: Multi-Agent Analysis & Orchestration Pipeline
+Milestone 2 focuses on agent development, parallel execution, vulnerability classification, and output aggregation
+##Key Accomplishments:
+Code Analysis Agent: Detects code smells, cyclomatic complexity issues, and design anti-patterns.  
+Security Vulnerability Agent: Scans source code for OWASP Top 10 vulnerabilities (SQL Injection, XSS, Hardcoded Secrets, IDOR).  
+Parallel Orchestrator: Coordinates multi-agent processing using parallel thread pools, aggregating results into unified severity-scored reports.  
+Evaluation & Testing: Validated agent detection accuracy using sample Python and Java scripts with injected code smells and security flaws
+Prerequisites & Installation
+##Prerequisites
+Python: 3.10+
 
-knowledge.txt :- contains the data about secure coding practices and owasp top 10 policies, etc.
+Java Development Kit (JDK): javac installed and configured in system path
 
-## Prerequisites
-- Python
-- Java javac
-- HuggingFace account & token (free) – get from huggingface.co/settings/tokens
-
-## Setup
-```bash
-pip install -r requirements.txt
-python build_kb.py
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+Hugging Face Account & API Token: Required for free embedding and model access
