@@ -1,4 +1,4 @@
-#🛡️ AI Code Review & Security Analysis Agent
+#AI Code Review & Security Analysis Agent
 An intelligent, multi-agent platform designed to automate code reviews, identify code smells, detect OWASP-standard security vulnerabilities, and provide context-aware remediation guidance using RAG (Retrieval-Augmented Generation).
 ## Project Overview
  Manual code reviews are often slow, subjective, and difficult to scale, leaving critical security vulnerabilities and code quality issues undetected until late in the development lifecycle.  This project delivers an automated pipeline for Python and Java source code. When a developer submits code via direct paste or file upload , a multi-agent system orchestrates static analysis, vulnerability scanning, remediation generation, and PR summary compilation. Additionally, a RAG-powered Conversational Assistant enables developers to ask follow-up questions grounded in secure coding standards. 
