@@ -39,9 +39,12 @@ The platform relies on a modular, multi-agent pipeline:
 └──────────────────────────────────────────────────────────┘
 
 ## Pipelining Process
-Submission & Validation: The submission module validates syntax using language-specific tools (ast for Python, javalang/javac for Java). Invalid code is rejected immediately with error locations.  
-Parallel Agent Analysis: Validated code is processed concurrently by the Code Analysis Agent (design smells, complexity) and the Security Vulnerability Agent (OWASP vulnerabilities like SQLi, XSS, hardcoded secrets). 
-Synthesis & Remediation: Findings are unified and sent to the Remediation Agent to produce corrected code snippets. The PR Summary Agent consolidates everything into a structured review.  
+Submission & Validation: The submission module validates syntax using language-specific tools (ast for Python, javalang/javac for Java). Invalid code is rejected immediately with error locations.
+
+Parallel Agent Analysis: Validated code is processed concurrently by the Code Analysis Agent (design smells, complexity) and the Security Vulnerability Agent (OWASP vulnerabilities like SQLi, XSS, hardcoded secrets).
+
+Synthesis & Remediation: Findings are unified and sent to the Remediation Agent to produce corrected code snippets. The PR Summary Agent consolidates everything into a structured review.
+
 Interactive RAG Q&A: Developers can ask questions regarding the findings. The Conversational Assistant queries the indexed vector database (ChromaDB) to retrieve relevant secure coding guidelines before generating answers. 
 
 ## Milestone 1: Core Architecture & Knowledge Base 
@@ -51,7 +54,7 @@ Knowledge Base Ingestion: Documented OWASP guidelines and secure coding standard
 RAG Pipeline Construction: Built build_kb.py to chunk, embed (via Hugging Face transformers), and index knowledge documents into a local ChromaDB vector store.
 Syntax Validation Module: Implemented file and paste ingestion with AST validation for Python and Java source code.  
 REST Service Endpoints: Built initial server endpoints (/api/submit and /api/chat) inside 
-## Files Implemented (Milestone 1):
+### Files Implemented (Milestone 1):
 build_kb.py: Script to process knowledge.txt, generate vector embeddings, and build the persistent ChromaDB store.
 knowledge.txt: Knowledge base containing OWASP Top 10 policies, secure design patterns, and anti-pattern rules.  
 main.py: Core FastAPI service serving the submission and basic RAG chat endpoints.
