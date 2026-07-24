@@ -1,12 +1,12 @@
 import json
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
 class CodeAnalysisAgent:
-    """Detects code smells, complexity issues, design anti-patterns, and poor coding practices using Google Gemini."""
+    """Detects code smells, complexity issues, design anti-patterns, and poor coding practices using Groq."""
 
-    def __init__(self, model_name: str = "gemini-3.5-flash"): # Or whichever model works for you
-        self.llm = ChatGoogleGenerativeAI(model=model_name, temperature=0.0)
+    def __init__(self, model_name: str = "llama-3.3-70b-versatile"):
+        self.llm = ChatGroq(model_name=model_name, temperature=0.0)
 
     def analyze(self, code: str, language: str) -> list:
         prompt = ChatPromptTemplate.from_messages([
@@ -37,7 +37,7 @@ Return ONLY a valid JSON array of objects with the exact following schema and no
         else:
             raw_text = str(response.content)
 
-        content = raw_text.strip().lstrip("```json").rstrip("```").strip()
+        content = raw_text.strip().removeprefix("```json").removesuffix("```").strip()
 
         try:
             return json.loads(content)
