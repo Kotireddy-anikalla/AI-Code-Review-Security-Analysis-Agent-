@@ -12,6 +12,8 @@ class RemediationAgent:
 Review the provided original source code and the list of detected code findings (quality issues and security vulnerabilities).
 For each finding, generate specific fix recommendations, a clear explanation, and the exact corrected code example.
 
+The "severity" field must be exactly one of these four values (uppercase, no synonyms like "Major"/"Minor"): CRITICAL, HIGH, MEDIUM, LOW. Carry over the same severity that was given for that finding.
+
 Return ONLY a valid JSON array matching this exact schema, with no markdown fences and no extra commentary:
 [
   {{
