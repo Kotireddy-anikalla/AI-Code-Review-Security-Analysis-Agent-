@@ -1,77 +1,51 @@
-import ast
-import javalang
-import os
-from typing import Dict, Tuple, Union
+import concurrent.futures
+from typing import Dict, List, Any
+from src.agents.code_analysis_agent import CodeAnalysisAgent
+from src.agents.security_agent import SecurityVulnerabilityAgent
+from src.agents.remediation_agent import RemediationAgent
+from src.agents.pr_summary_agent import PRSummaryAgent
 
-class CodeSubmissionHandler:
-    """Handles direct code submission and file uploads with automatic language detection and syntax validation."""
+class MultiAgentOrchestrator:
+    """Orchestrates multi-agent pipeline execution across Analysis, Security, Remediation, and PR Summary agents."""
 
-    def detect_language(self, code_content: str, filename: str = None) -> str:
-        """Automatically detects whether the provided code is Python or Java."""
-        if filename:
-            ext = os.path.splitext(filename)[1].lower()
-            if ext in [".py", ".pyw"]:
-                return "python"
-            if ext in [".java"]:
-                return "java"
+    def __init__(self):
+        self.code_analysis_agent = CodeAnalysisAgent()
+        self.security_agent = SecurityVulnerabilityAgent()
+        self.remediation_agent = RemediationAgent()
+        self.pr_summary_agent = PRSummaryAgent()
 
-        stripped = code_content.strip()
+    def run_pipeline(self, code: str, language: str) -> Dict[str, Any]:
+        # Step 1: Run Code Analysis Agent and Security Vulnerability Agent in parallel
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_quality = executor.submit(self.code_analysis_agent.analyze, code, language)
+            future_security = executor.submit(self.security_agent.analyze, code, language)
 
-        # Check Java syntax signatures
-        java_keywords = ["public class ", "public static void main", "import java.", "System.out.println", "private final ", "protected class "]
-        if any(kw in code_content for kw in java_keywords):
-            return "java"
+            quality_findings = future_quality.result()
+            security_findings = future_security.result()
 
-        # Check Python syntax signatures
-        python_keywords = ["def ", "import ", "from ", "class ", "elif ", "if __name__ == "]
-        if stripped.startswith(("import ", "def ", "class ", "from ", "#")) or any(kw in code_content for kw in python_keywords):
-            return "python"
+        # Step 2: Merge Findings into a unified list
+        unified_findings = []
 
-        # AST Parse trial fallback
-        try:
-            ast.parse(code_content)
-            return "python"
-        except SyntaxError:
-            try:
-                if "class" in code_content or "public" in code_content:
-                    javalang.parse.parse(code_content)
-                return "java"
-            except Exception:
-                return "python"
+        for item in quality_findings:
+            item["category"] = "Code Quality"
+            unified_findings.append(item)
 
-    @staticmethod
-    def validate_python_syntax(code: str) -> Tuple[bool, str]:
-        try:
-            ast.parse(code)
-            return True, "Valid Python syntax."
-        except SyntaxError as e:
-            return False, f"Python Syntax Error on line {e.lineno}: {e.msg}"
+        for item in security_findings:
+            item["category"] = "Security Vulnerability"
+            item["type"] = item.get("vulnerability", item.get("type", "Security Issue"))
+            unified_findings.append(item)
 
-    @staticmethod
-    def validate_java_syntax(code: str) -> Tuple[bool, str]:
-        try:
-            if "class" in code or "public" in code:
-                javalang.parse.parse(code)
-            return True, "Valid Java syntax."
-        except Exception as e:
-            return False, f"Java Syntax Error: {str(e)}"
+        # Step 3: Run Remediation Agent to generate refactored code fixes
+        remediations = self.remediation_agent.generate_remediations(code, language, unified_findings)
 
-    def process_submission(self, code_content: str, filename: str = None) -> Dict[str, Union[bool, str]]:
-        if not code_content.strip():
-            return {"valid": False, "message": "Submission content is empty.", "language": "Unknown", "code": code_content}
-
-        detected_lang = self.detect_language(code_content, filename)
-
-        if detected_lang == "python":
-            is_valid, msg = self.validate_python_syntax(code_content)
-        elif detected_lang == "java":
-            is_valid, msg = self.validate_java_syntax(code_content)
-        else:
-            return {"valid": False, "message": f"Unsupported language: {detected_lang}", "language": detected_lang.capitalize(), "code": code_content}
+        # Step 4: Run PR Summary Agent to compile the executive review summary
+        pr_summary = self.pr_summary_agent.generate_summary(code, language, unified_findings, remediations)
 
         return {
-            "valid": is_valid,
-            "message": msg,
-            "language": detected_lang.capitalize(),
-            "code": code_content
+            "findings": unified_findings,
+            "remediations": remediations,
+            "pr_summary": pr_summary,
+            "quality_count": len(quality_findings),
+            "security_count": len(security_findings),
+            "total_issues": len(unified_findings)
         }
