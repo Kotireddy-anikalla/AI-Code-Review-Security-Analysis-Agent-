@@ -1,51 +1,86 @@
-import concurrent.futures
-from typing import Dict, List, Any
+import asyncio
+from typing import Dict, List, Tuple
+
 from src.agents.code_analysis_agent import CodeAnalysisAgent
 from src.agents.security_agent import SecurityVulnerabilityAgent
 from src.agents.remediation_agent import RemediationAgent
 from src.agents.pr_summary_agent import PRSummaryAgent
 
+
 class MultiAgentOrchestrator:
-    """Orchestrates multi-agent pipeline execution across Analysis, Security, Remediation, and PR Summary agents."""
+    """Coordinates the Code Analysis, Security, Remediation, and PR Summary agents
+    into a single unified code review pipeline.
 
-    def __init__(self):
-        self.code_analysis_agent = CodeAnalysisAgent()
-        self.security_agent = SecurityVulnerabilityAgent()
-        self.remediation_agent = RemediationAgent()
-        self.pr_summary_agent = PRSummaryAgent()
+    CodeAnalysisAgent and SecurityVulnerabilityAgent are independent of each other,
+    so they run concurrently via asyncio. RemediationAgent and PRSummaryAgent each
+    depend on the combined findings from the previous step, so they run sequentially
+    after the analysis stage completes.
+    """
 
-    def run_pipeline(self, code: str, language: str) -> Dict[str, Any]:
-        # Step 1: Run Code Analysis Agent and Security Vulnerability Agent in parallel
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future_quality = executor.submit(self.code_analysis_agent.analyze, code, language)
-            future_security = executor.submit(self.security_agent.analyze, code, language)
+    def __init__(self, model_name: str = "llama-3.3-70b-versatile"):
+        self.code_analysis_agent = CodeAnalysisAgent(model_name=model_name)
+        self.security_agent = SecurityVulnerabilityAgent(model_name=model_name)
+        self.remediation_agent = RemediationAgent(model_name=model_name)
+        self.pr_summary_agent = PRSummaryAgent(model_name=model_name)
 
-            quality_findings = future_quality.result()
-            security_findings = future_security.result()
+    @staticmethod
+    def _normalize_quality_findings(raw_findings: List[dict]) -> List[dict]:
+        """Tags code-quality findings with category='Quality' and keeps the 'type' field as-is."""
+        normalized = []
+        for f in raw_findings:
+            normalized.append({
+                "category": "Quality",
+                "type": f.get("type", "Unknown Issue"),
+                "severity": f.get("severity", "LOW"),
+                "line": f.get("line"),
+                "description": f.get("description", ""),
+            })
+        return normalized
 
-        # Step 2: Merge Findings into a unified list
-        unified_findings = []
+    @staticmethod
+    def _normalize_security_findings(raw_findings: List[dict]) -> List[dict]:
+        """Tags security findings with category='Security' and renames 'vulnerability' -> 'type'
+        so both finding types share one consistent key for downstream matching (e.g. remediations_map)."""
+        normalized = []
+        for f in raw_findings:
+            normalized.append({
+                "category": "Security",
+                "type": f.get("vulnerability", f.get("type", "Unknown Vulnerability")),
+                "severity": f.get("severity", "LOW"),
+                "line": f.get("line"),
+                "description": f.get("description", ""),
+            })
+        return normalized
 
-        for item in quality_findings:
-            item["category"] = "Code Quality"
-            unified_findings.append(item)
+    async def _run_analysis_stage(self, code: str, language: str) -> Tuple[List[dict], List[dict]]:
+        """Runs the code-quality and security analysis agents concurrently."""
+        quality_raw, security_raw = await asyncio.gather(
+            self.code_analysis_agent.analyze_async(code, language),
+            self.security_agent.analyze_async(code, language),
+        )
+        return quality_raw, security_raw
 
-        for item in security_findings:
-            item["category"] = "Security Vulnerability"
-            item["type"] = item.get("vulnerability", item.get("type", "Security Issue"))
-            unified_findings.append(item)
+    async def _run_pipeline_async(self, code: str, language: str) -> Dict:
+        quality_raw, security_raw = await self._run_analysis_stage(code, language)
 
-        # Step 3: Run Remediation Agent to generate refactored code fixes
-        remediations = self.remediation_agent.generate_remediations(code, language, unified_findings)
+        quality_findings = self._normalize_quality_findings(quality_raw)
+        security_findings = self._normalize_security_findings(security_raw)
+        findings = quality_findings + security_findings
 
-        # Step 4: Run PR Summary Agent to compile the executive review summary
-        pr_summary = self.pr_summary_agent.generate_summary(code, language, unified_findings, remediations)
+        # These two depend on the combined findings above, so they stay sequential.
+        remediations = self.remediation_agent.generate_remediations(code, language, findings)
+        pr_summary = self.pr_summary_agent.generate_summary(code, language, findings, remediations)
 
         return {
-            "findings": unified_findings,
+            "findings": findings,
             "remediations": remediations,
             "pr_summary": pr_summary,
+            "total_issues": len(findings),
             "quality_count": len(quality_findings),
             "security_count": len(security_findings),
-            "total_issues": len(unified_findings)
         }
+
+    def run_pipeline(self, code: str, language: str) -> Dict:
+        """Synchronous entry point used by app.py (Streamlit callbacks are sync).
+        Internally runs the analysis stage concurrently via asyncio."""
+        return asyncio.run(self._run_pipeline_async(code, language))
