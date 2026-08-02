@@ -23,22 +23,57 @@ class MultiAgentOrchestrator:
         self.remediation_agent = RemediationAgent(model_name=model_name)
         self.pr_summary_agent = PRSummaryAgent(model_name=model_name)
 
-    @staticmethod
-    def _normalize_quality_findings(raw_findings: List[dict]) -> List[dict]:
+    # Canonical 4-tier severity scale used throughout the app.
+    _VALID_SEVERITIES = {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
+
+    # Maps common synonyms / casings the LLM might still slip in, despite the
+    # prompt's explicit enum instruction, onto the canonical scale.
+    _SEVERITY_SYNONYMS = {
+        "MAJOR": "HIGH",
+        "MINOR": "LOW",
+        "SEVERE": "CRITICAL",
+        "BLOCKER": "CRITICAL",
+        "MODERATE": "MEDIUM",
+        "TRIVIAL": "LOW",
+        "INFO": "LOW",
+        "INFORMATIONAL": "LOW",
+    }
+
+    @classmethod
+    def _normalize_severity(cls, raw_severity) -> str:
+        """Coerces any severity value returned by an LLM into one of
+        CRITICAL / HIGH / MEDIUM / LOW, regardless of casing or synonym drift."""
+        if not raw_severity:
+            return "MEDIUM"
+
+        value = str(raw_severity).strip().upper()
+
+        if value in cls._VALID_SEVERITIES:
+            return value
+
+        if value in cls._SEVERITY_SYNONYMS:
+            return cls._SEVERITY_SYNONYMS[value]
+
+        # Unrecognized value entirely (e.g. free-text) - default to a safe middle tier
+        # rather than silently dropping the finding.
+        return "MEDIUM"
+
+    @classmethod
+    def _normalize_quality_findings(cls, raw_findings: List[dict]) -> List[dict]:
         """Tags code-quality findings with category='Quality' and keeps the 'type' field as-is."""
         normalized = []
         for f in raw_findings:
             normalized.append({
                 "category": "Quality",
                 "type": f.get("type", "Unknown Issue"),
-                "severity": f.get("severity", "LOW"),
+                "severity": cls._normalize_severity(f.get("severity")),
                 "line": f.get("line"),
                 "description": f.get("description", ""),
             })
         return normalized
 
-    @staticmethod
-    def _normalize_security_findings(raw_findings: List[dict]) -> List[dict]:
+    @classmethod
+    def _normalize_security_findings(cls, raw_findings: List[dict]) -> List[dict]:
         """Tags security findings with category='Security' and renames 'vulnerability' -> 'type'
         so both finding types share one consistent key for downstream matching (e.g. remediations_map)."""
         normalized = []
@@ -46,7 +81,7 @@ class MultiAgentOrchestrator:
             normalized.append({
                 "category": "Security",
                 "type": f.get("vulnerability", f.get("type", "Unknown Vulnerability")),
-                "severity": f.get("severity", "LOW"),
+                "severity": cls._normalize_severity(f.get("severity")),
                 "line": f.get("line"),
                 "description": f.get("description", ""),
             })
@@ -69,6 +104,10 @@ class MultiAgentOrchestrator:
 
         # These two depend on the combined findings above, so they stay sequential.
         remediations = self.remediation_agent.generate_remediations(code, language, findings)
+        for rem in remediations:
+            if "severity" in rem:
+                rem["severity"] = self._normalize_severity(rem.get("severity"))
+
         pr_summary = self.pr_summary_agent.generate_summary(code, language, findings, remediations)
 
         return {
