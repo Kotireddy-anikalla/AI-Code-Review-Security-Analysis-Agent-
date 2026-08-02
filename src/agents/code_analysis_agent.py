@@ -1,4 +1,5 @@
 import json
+import os
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -18,28 +19,26 @@ class CodeAnalysisAgent:
 
 Return ONLY a valid JSON array of objects with the exact following schema and no additional formatting or text:
 [
-  {{
+  {
     "type": "Code Quality / Anti-Pattern Name",
     "severity": "CRITICAL",
     "line": null,
     "description": "Detailed description of the issue"
-  }}
+  }
 ]"""),
             ("user", "Language: {language}\n\nCode:\n```{language}\n{code}\n```")
         ])
 
         chain = prompt | self.llm
-        response = chain.invoke({"language": language, "code": code})
-        
-        # Safe text extraction from response
-        if isinstance(response.content, list):
-            raw_text = "".join([part.get("text", "") if isinstance(part, dict) else str(part) for part in response.content])
-        else:
-            raw_text = str(response.content)
-
-        content = raw_text.strip().removeprefix("```json").removesuffix("```").strip()
-
         try:
+            response = chain.invoke({"language": language, "code": code})
+            
+            if isinstance(response.content, list):
+                raw_text = "".join([part.get("text", "") if isinstance(part, dict) else str(part) for part in response.content])
+            else:
+                raw_text = str(response.content)
+
+            content = raw_text.strip().removeprefix("```json").removesuffix("```").strip()
             return json.loads(content)
-        except json.JSONDecodeError:
-            return [{"type": "Format Error", "severity": "LOW", "line": None, "description": content}]
+        except Exception as e:
+            return [{"type": "Code Analysis Error", "severity": "LOW", "line": None, "description": str(e)}]
