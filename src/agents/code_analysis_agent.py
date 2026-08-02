@@ -14,6 +14,8 @@ class CodeAnalysisAgent:
 - Complexity issues
 - Poor coding practices
 
+The "severity" field must be exactly one of these four values (uppercase, no synonyms like "Major"/"Minor"): CRITICAL, HIGH, MEDIUM, LOW.
+
 Return ONLY a valid JSON array of objects with the exact following schema and no additional formatting or text:
 [
   {{
