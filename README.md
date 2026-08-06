@@ -166,7 +166,7 @@ Milestone 3 focused on persisting review history, generating shareable reports w
 
 - **Python**: 3.10+
 - **Java Development Kit (JDK)**: `javac` installed and configured in the system path
-- **Hugging Face Account & API Token**: Required for free embedding and model access
+- **Groq Account & API Token**: Required for free embedding and model access
 
 ---
 
